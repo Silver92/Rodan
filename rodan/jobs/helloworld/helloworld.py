@@ -29,6 +29,47 @@ class HelloWorld(RodanTask):
         outfile.close()
         return True
 
+class HelloWorld_1PortType_MultiPorts(RodanTask):
+    name = 'Hello World MultiTasks'
+    author = 'Silver'
+    description = "A demo of showing the multiports job functions, didn't add list type parsing"
+    settings = {}
+    enabled = True
+    category = "Test"
+    interactive = False
+
+    input_port_types = (
+        {
+            'name': 'Text input', 
+            'minimum': 0, 
+            'maximum': 10, 
+            'resource_types': ['text/plain']
+        },
+    )
+    output_port_types = (
+        {
+            'name': 'Text output', 
+            'minimum': 1, 
+            'maximum': 10, 
+            'resource_types': ['text/plain']
+        },
+    )
+
+    def run_my_task(self, inputs, settings, outputs):
+        for output_type in outputs:
+            for output in outputs[output_type]:
+                outfile = open(output["resource_path"], "w")
+                self.writeInputFile(inputs, outfile)
+                outfile.write("Hello MultiTask ")
+                outfile.close()
+
+    def writeInputFile(self, inputs, outfile):
+        for input_type in inputs:
+            for input in inputs[input_type]:
+                infile = open(input["resource_path"], "r")
+                outfile.write(infile.read() + "\n")
+                infile.close()
+
 class HelloWorld3(RodanTask):
     name = 'Hello World - Python3'
     author = 'Alex Daigle'
