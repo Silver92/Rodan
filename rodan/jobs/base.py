@@ -297,7 +297,8 @@ class RodanTask(Task):
         If with_urls=True, it also includes the resource url and thumbnail urls.
         """
         def _extract_resource(resource, resource_type_mimetype=None):
-            r = {'resource_path': str(resource.resource_file.path),  # convert 'unicode' object to 'str' object for consistency
+            # convert 'unicode' object to 'str' object for consistency
+            r = {'resource_path': str(resource.resource_file.path),  
                  'resource_type': str(resource_type_mimetype or resource.resource_type.mimetype)}
             if with_urls:
                 r['resource_url'] = str(resource.resource_url)
@@ -306,7 +307,10 @@ class RodanTask(Task):
                 r['diva_image_dir'] = str(resource.diva_image_dir)
             return r
 
-        input_objs = Input.objects.filter(run_job=runjob).select_related('resource', 'resource__resource_type', 'resource_list').prefetch_related('resource_list__resources')
+        input_objs = Input.objects.filter(run_job=runjob).select_related('resource',
+                                                                         'resource__resource_type', 
+                                                                         'resource_list')
+        input_objs.prefetch_related('resource_list__resources')
 
         inputs = {}
         for input in input_objs:
@@ -316,16 +320,21 @@ class RodanTask(Task):
             if input.resource is not None:  # If resource
                 inputs[ipt_name].append(_extract_resource(input.resource))
             elif input.resource_list is not None:  # If resource_list
-                inputs[ipt_name].append(map(lambda x: _extract_resource(x, input.resource_list.resource_type.mimetype), input.resource_list.resources.all()))
+                inputs[ipt_name].append(map(lambda x: _extract_resource(x, 
+                                                                        input.resource_list.resource_type.mimetype), 
+                                                                        input.resource_list.resources.all()))
             else:
                 raise RuntimeError("Cannot find any resource or resource list on Input {0}".format(input.uuid))
         return inputs
 
     def _outputs(self, runjob):
         """
-        Return a dictionary of list of dictionary describing output information (resource type, resource or resource list, and original uuid).
+        Return a dictionary of list of dictionary describing output information 
+        (resource type, resource or resource list, and original uuid).
         """
-        output_objs = Output.objects.filter(run_job=runjob).select_related('resource', 'resource__resource_type', 'resource_list').prefetch_related('resource_list__resources')
+        output_objs = Output.objects.filter(run_job=runjob).select_related('resource', 
+                                                                            'resource__resource_type', 
+                                                                            'resource_list').prefetch_related('resource_list__resources')
 
         outputs = {}
         for output in output_objs:
@@ -418,6 +427,7 @@ class RodanTask(Task):
     #############################################
     # Automatic phase -- running in Celery thread
     #############################################
+    
     def run(self, runjob_id):
         """
         Code here are run asynchronously in Celery thread.
@@ -441,7 +451,8 @@ class RodanTask(Task):
 
             # build argument for run_my_task and mapping dictionary
             arg_outputs = {}
-            temppath_map = {}   # retains where originally assigned paths are from... prevent jobs changing them
+            # retains where originally assigned paths are from... prevent jobs changing them
+            temppath_map = {}   
 
             for opt_name, output_list in outputs.items():
                 if opt_name not in arg_outputs:
@@ -478,7 +489,11 @@ class RodanTask(Task):
                 runjob.error_summary = None
                 runjob.error_details = None
                 runjob.celery_task_id = None
-                runjob.save(update_fields=['status', 'job_settings', 'error_summary', 'error_details', 'celery_task_id'])
+                runjob.save(update_fields=['status', 
+                                            'job_settings', 
+                                            'error_summary', 
+                                            'error_details', 
+                                            'celery_task_id'])
 
                 # Send an email to owner of WorkflowRun
                 wfrun_id = RunJob.objects.filter(pk=runjob_id).values_list('workflow_run__uuid', flat=True)[0]
